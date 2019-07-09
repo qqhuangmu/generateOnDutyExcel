@@ -1,22 +1,17 @@
-package com.hxzy.biz;
+package com.hxzy.biz.workDays;
 
 import com.hxzy.bean.Holiday;
 import com.hxzy.util.StringUtil;
 
-import java.text.ParseException;
-import java.text.SimpleDateFormat;
-import java.util.ArrayList;
-import java.util.Calendar;
-import java.util.Date;
-import java.util.List;
+import java.util.*;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 public class DutyDateGenerator {
     /**
      * 日期格式：yyyy-MM
-     * @param dateStr
-     * @return
+     * @param dateStr  生成值班的日期
+     * @return 值班日期
      */
     public static List<Date> getDudyDate(String dateStr) {
 
@@ -30,9 +25,10 @@ public class DutyDateGenerator {
         c.setTime(date);
 
         int actualMaximum = c.getActualMaximum(Calendar.DATE); //每个月的最后一天
-        int actualMinimum = c.getActualMinimum(Calendar.DATE); //每个月的第一天
 
-        c.set(Calendar.DATE, actualMinimum);// 每个月的1号为值班起点
+        int theFirstDateOfMonth = findTheFirstDateOfMonth(c); //每个月的第一个工作日
+
+        c.set(Calendar.DATE, theFirstDateOfMonth);// 每个月的1号为值班起点
 
         list.add(c.getTime());
 
@@ -42,12 +38,12 @@ public class DutyDateGenerator {
 
             return c.getTime();
         })
-                .limit(actualMaximum - 1)
+                .limit(actualMaximum - theFirstDateOfMonth)
                 .collect(Collectors.toList());
 
         list.addAll(list2); //合并集合
 
-        List<Date> collect = list.stream()
+        return list.stream()
                 //.filter(t -> isWorkOnHoliday(t)) //排除周末补班的情况
                 //.filter(t -> isNotWeekDay(t))  //排除周末
                 //.filter(t -> isNotHoliday(t))  //排除法定节日
@@ -55,7 +51,6 @@ public class DutyDateGenerator {
                         isWorkOnHoliday(t) || isNotWeekDay(t) && isNotHoliday(t)
                 )
                 .collect(Collectors.toList());
-        return collect;
     }
 
     private static boolean isNotWeekDay(Date date) {
@@ -82,11 +77,6 @@ public class DutyDateGenerator {
                     }
                     return null;
                 })
-                /*.peek(t -> {
-                    System.out.println(HolidaysTransfer.converMills2DateStr(t.getFrom()));
-                    System.out.println(HolidaysTransfer.converMills2DateStr(t.getTo()));
-                    System.out.println();
-                })*/
                 .anyMatch(t ->
                         //在这个表达式范围内的日期为放假日期
                         date.getTime() >= t.getFrom() && date.getTime() < t.getTo()
@@ -106,12 +96,46 @@ public class DutyDateGenerator {
                             c1.setTime(date);
                             c2.setTimeInMillis(t.getFrom());
                             c3.setTimeInMillis(t.getTo());
-                            return c1.get(Calendar.MONTH) == c2.get(Calendar.MONTH) || c1.get(Calendar.MONTH) == c2.get(Calendar.MONTH) - 1;
+                            
+                            int date_month = c1.get(Calendar.MONTH);
+                            int c2_month = c2.get(Calendar.MONTH);
+                            int c3_month = c3.get(Calendar.MONTH);
+                            
+                            return date_month == c2_month && date_month == c3_month || date_month == c2_month && date_month == c3_month - 1; 
+                            
+                            //return c1.get(Calendar.MONTH) == c2.get(Calendar.MONTH) || c1.get(Calendar.MONTH) == c2.get(Calendar.MONTH) - 1;
                         }
                 )
                 .anyMatch(t ->
                         date.getTime() >= t.getFrom() && date.getTime() <= t.getTo()
                 );
+    }
+
+    public static int findTheFirstDateOfMonth(Calendar c){
+        int month = c.get(Calendar.MONTH);//生成值班表的月份
+        List<Holiday> holiday = LegalHoliday.getInstance().getHoliday();
+        Optional<Holiday> first = holiday.stream().filter(t -> {
+            long to = t.getTo();
+            Calendar instance = Calendar.getInstance();
+            instance.setTimeInMillis(to);
+            int to_month = instance.get(Calendar.MONTH);
+
+            long from = t.getFrom();
+            instance.setTimeInMillis(from);
+            int from_month = instance.get(Calendar.MONTH);
+            /*
+             * 放假持续到第二个月
+             */
+            return from_month == month - 1 && to_month == month;
+        }).min((o1, o2) -> (int) (o1.getTo() - o2.getTo()));
+
+        if (first.isPresent()) {
+            long to = first.get().getTo();
+            Calendar instance = Calendar.getInstance();
+            instance.setTimeInMillis(to);
+            return instance.get(Calendar.DATE) + 1;
+        }
+        return 1;
     }
 
 

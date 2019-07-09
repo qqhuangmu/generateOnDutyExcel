@@ -1,6 +1,7 @@
 package com.hxzy.biz;
 
 
+import com.hxzy.biz.workDays.DutyDateGenerator;
 import com.hxzy.util.StringUtil;
 import org.junit.Test;
 
@@ -12,7 +13,7 @@ public class DutyDateGeneratorTest {
 
     @Test
     public void getDudyDate() {
-        List<Date> dudyDate = DutyDateGenerator.getDudyDate("2019-08");
+        List<Date> dudyDate = DutyDateGenerator.getDudyDate("2019-06");
         dudyDate.forEach(t->
             System.out.println(StringUtil.formatDate(t))
         );
@@ -21,9 +22,17 @@ public class DutyDateGeneratorTest {
     @Test
     public void isWorkOnHoliday() {
         Calendar c = Calendar.getInstance();
-        c.set(2019,Calendar.JULY,7);
+        c.set(2019,Calendar.AUGUST,3);
 
         boolean workOnHoliday = DutyDateGenerator.isWorkOnHoliday(c.getTime());
         System.out.println(workOnHoliday);
+    }
+
+    @Test
+    public void findTheFisrtDateOfMonth(){
+        Calendar instance = Calendar.getInstance();
+        instance.set(2019, Calendar.SEPTEMBER, 6);
+        int outTheFisrtDateOfMonth = DutyDateGenerator.findTheFirstDateOfMonth(instance);
+        System.out.println(outTheFisrtDateOfMonth);
     }
 }

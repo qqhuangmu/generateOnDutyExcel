@@ -3,6 +3,7 @@ package com.hxzy.util;
 import java.text.ParseException;
 import java.text.SimpleDateFormat;
 import java.util.Date;
+import java.util.List;
 
 public class StringUtil {
     public static String formatDate(Date date) {
@@ -21,6 +22,13 @@ public class StringUtil {
         }
         return null;
     }
+
+    public static String formatDate2YearMonth(String str){
+        Date date = formatStr2DateMonth(str);
+        SimpleDateFormat sdf = new SimpleDateFormat("yyyy年MM月");
+        return sdf.format(date);
+    }
+
     public static Date formatStr2DateMonth(String str){
         SimpleDateFormat sdf = new SimpleDateFormat("yyyy-MM");
         Date parse = null;
@@ -56,5 +64,8 @@ public class StringUtil {
         SimpleDateFormat sdf = new SimpleDateFormat("yyyy-MM-dd");
         Date date = new Date(time);
         return sdf.format(date);
+    }
+    public static boolean isEmpty(Object obj){
+        return obj == null;
     }
 }
